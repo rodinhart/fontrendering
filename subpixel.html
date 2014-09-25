@@ -1,0 +1,61 @@
+<html>
+<head>
+  <title>subpixel</title>
+</head>
+<body>
+  <canvas id="canvas1" width="800" height="100"></canvas>
+  <br />
+  <canvas id="canvas2" width="2400" height="300" style="display: none;"></canvas>
+  <canvas id="canvas3" width="800" height="100"></canvas>
+
+  <script type="text/javascript">
+    var channel, target, g, fontSize, h, H, lf, p, source, w, W, x, y;
+
+    // canvas1: 1-to-1 rendering
+    g = document.getElementById('canvas1').getContext('2d');
+    g.fillStyle = 'black';
+
+    y = 0;
+    for (fontSize = 8; fontSize < 15; fontSize++) {
+      g.font = fontSize + 'px Arial';
+      y += fontSize + 2;
+      g.fillText('The quick brown fox jumps over the lazy dog', 3, y);
+    }
+
+    // canvas 2 & 3: sub-pixel rendering
+    w = 800;
+    W = 3 * 800;
+    h = 100;
+    H = 300;
+    g = document.getElementById('canvas2').getContext('2d');
+    g.fillStyle = 'black';
+
+    y = 0;
+    for (fontSize = 8; fontSize < 15; fontSize++) {
+      g.font = (3 * fontSize) + 'px Arial';
+      y += (3 * fontSize) + 2;
+      g.fillText('The quick brown fox jumps over the lazy dog', 3, y);
+    }
+
+    source = g.getImageData(0, 0, W, H).data;
+    target = document.getElementById('canvas3').getContext('2d').getImageData(0, 0, w, h);
+    lf = 4 * W;
+    for (y = 0; y < h; y++) {
+      for (x = 2; x < w - 2; x++) {
+        for (channel = 0; channel < 3; channel++) {
+          p = 4 * (W * 3 * y + 3 * x + channel) + 3;
+          target.data[4 * (w * y + x) + channel] = 255 - Math.round((
+            source[p - 8] + 2 * source[p - 4] + 3 * source[p] + 2 * source[p + 4] + source[p + 8] +
+            source[p + lf - 8] + 2 * source[p + lf - 4] + 3 * source[p + lf] + 2 * source[p + lf + 4] + source[p + lf + 8] +
+            source[p + 2*lf - 8] + 2 * source[p + 2*lf - 4] + 3 * source[p + 2*lf] + 2 * source[p + 2*lf + 4] + source[p + 2*lf + 8]
+          ) / 27);
+        }
+
+        target.data[4 * (w * y + x) + 3] = 255; // alpha channel
+      }
+    }
+
+    document.getElementById('canvas3').getContext('2d').putImageData(target, 0, 0);
+    console.log('done');
+  </script>
+</html>
